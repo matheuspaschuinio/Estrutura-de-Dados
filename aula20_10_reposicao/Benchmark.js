@@ -1,6 +1,3 @@
-// Benchmark.js
-
-// Importando as classes
 const AVLTree = require('./AVLTree.js');
 const BinaryTree = require('./BinaryTree.js');
 const LinkedList = require('./LinkedList.js');
@@ -8,24 +5,19 @@ const DoublyLinkedList = require('./DoublyLinkedList.js');
 const Fila = require('./Fila.js');
 const Pilha = require('./Pilha.js');
 
-// --- CONFIGURAÇÕES DO BENCHMARK ---
-const NUMERO_DE_TESTES = 10;
-const TAMANHO_DA_MASSA_DE_DADOS = 10000000;
-const NOME_PARA_BUSCA = "Matheus"; // Substitua pelo seu nome 
+const TAMANHO_DA_MASSA_DE_DADOS = 10000000; 
 
-// Função para gerar números aleatórios
+const NOME_PARA_BUSCA = "SEU NOME AQUI";
+
 function getRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
 
-// Função para formatar os resultados e calcular a média
-function formatarResultados(estrutura, tempos) {
-    const media = tempos.reduce((a, b) => a + b, 0) / tempos.length;
-    const temposFormatados = tempos.map(t => `${t.toFixed(4)}ms`).join('\t');
-    console.log(`${estrutura.padEnd(25)}\t${temposFormatados}\t${media.toFixed(4)}ms`);
-}
-
 async function runBenchmark() {
+    console.log(`--- INICIANDO TESTE ---`);
+    console.log(`(Você deve rodar este script 10 vezes para preencher sua tabela)\n`);
+    console.log(`Massa de dados: ${TAMANHO_DA_MASSA_DE_DADOS} itens.\n`);
+
     const estruturas = {
         'Array': () => [],
         'Pilha': () => new Pilha(),
@@ -41,7 +33,7 @@ async function runBenchmark() {
             'Array': (est, val) => est.push(val),
             'Pilha': (est, val) => est.adicionar(val),
             'Fila': (est, val) => est.enqueue(val),
-            'Lista Encadeada': (est, val) => est.insertAtBeginning(val), // Inserir no final é mais justo para comparação
+            'Lista Encadeada': (est, val) => est.insertAtBeginning(val), 
             'Lista Duplamente Encadeada': (est, val) => est.append(val),
             'Árvore Binária': (est, val) => est.insert(val),
             'Árvore Binária AVL': (est, val) => est.insert(val),
@@ -57,57 +49,55 @@ async function runBenchmark() {
         }
     };
 
-    const resultadosInsercao = {};
-    const resultadosBusca = {};
+    let resultadosInsercao = [];
+    let resultadosBusca = [];
 
-    for (let i = 1; i <= NUMERO_DE_TESTES; i++) {
-        console.log(`\n--- EXECUTANDO TESTE Nº ${i} de ${NUMERO_DE_TESTES} ---\n`);
+    console.log("Executando testes... Isso pode demorar.");
 
-        for (const nome in estruturas) {
-            // Garante que a memória seja liberada entre os testes
-            if (global.gc) { global.gc(); }
-            
-            let estrutura = estruturas[nome]();
+    for (const nome in estruturas) {
+        
+        let estrutura = estruturas[nome]();
+        let labelInsercao = `Inserção - ${nome.padEnd(25)}`;
+        let labelBusca = `Busca    - ${nome.padEnd(25)}`;
 
-            // --- Teste de Inserção ---
+        try {
             let inicioInsercao = performance.now();
             for (let j = 0; j < TAMANHO_DA_MASSA_DE_DADOS; j++) {
                 metodos.insercao[nome](estrutura, getRandomInt(TAMANHO_DA_MASSA_DE_DADOS));
             }
-            // Insere o nome por último
             metodos.insercao[nome](estrutura, NOME_PARA_BUSCA);
             let fimInsercao = performance.now();
+            
+            // --- LINHA MODIFICADA ---
+            let tempoInsercaoFormatado = (fimInsercao - inicioInsercao).toFixed(4).replace('.', ',');
+            resultadosInsercao.push(`${labelInsercao}: ${tempoInsercaoFormatado}`);
 
-            if (!resultadosInsercao[nome]) resultadosInsercao[nome] = [];
-            resultadosInsercao[nome].push(fimInsercao - inicioInsercao);
-            console.log(`[Teste ${i}] Inserção em ${nome}: ${(fimInsercao - inicioInsercao).toFixed(4)}ms`);
 
-            // --- Teste de Busca ---
             let inicioBusca = performance.now();
             metodos.busca[nome](estrutura, NOME_PARA_BUSCA);
             let fimBusca = performance.now();
+            
+            // --- LINHA MODIFICADA ---
+            let tempoBuscaFormatado = (fimBusca - inicioBusca).toFixed(4).replace('.', ',');
+            resultadosBusca.push(`${labelBusca}: ${tempoBuscaFormatado}`);
 
-            if (!resultadosBusca[nome]) resultadosBusca[nome] = [];
-            resultadosBusca[nome].push(fimBusca - inicioBusca);
-            console.log(`[Teste ${i}] Busca em ${nome}:    ${(fimBusca - inicioBusca).toFixed(4)}ms`);
-
-            // Limpa a estrutura para o próximo loop
-            estrutura = null;
+        } catch (e) {
+            resultadosInsercao.push(`${labelInsercao}: ERRO (Estouro de pilha?)`);
+            resultadosBusca.push(`${labelBusca}: N/A`);
         }
-    }
 
-    // --- Exibição dos Resultados Finais ---
-    console.log("\n\n--- TABELA DE RESULTADOS: INSERÇÃO ---");
-    console.log("ESTRUTURA\t\t\tT1\t\tT2\t\tT3\t\tT4\t\tT5\t\tT6\t\tT7\t\tT8\t\tT9\t\tT10\t\tMÉDIA");
-    for (const nome in resultadosInsercao) {
-        formatarResultados(nome, resultadosInsercao[nome]);
+        estrutura = null;
     }
+    
+    console.log("\n\n--- RESULTADOS DE INSERÇÃO ---");
+    console.log("=".repeat(45));
+    resultadosInsercao.forEach(resultado => console.log(resultado));
+    
+    console.log("\n--- RESULTADOS DE BUSCA ---");
+    console.log("=".repeat(45));
+    resultadosBusca.forEach(resultado => console.log(resultado));
 
-    console.log("\n\n--- TABELA DE RESULTADOS: BUSCA ---");
-    console.log("ESTRUTURA\t\t\tT1\t\tT2\t\tT3\t\tT4\t\tT5\t\tT6\t\tT7\t\tT8\t\tT9\t\tT10\t\tMÉDIA");
-    for (const nome in resultadosBusca) {
-        formatarResultados(nome, resultadosBusca[nome]);
-    }
+    console.log("\n--- TESTE CONCLUÍDO ---");
 }
 
 runBenchmark();
